@@ -4,25 +4,15 @@ A hands-on repository for learning and building production-grade AI agents. Cove
 
 ## Phase 1: Foundation
 
-### 01-llm-fundamentals
+### 01-Generative AI Applications
 
-* Transformers
-* Attention mechanism
-* Context windows
-* Tokenization
-* Embeddings
-* Inference lifecycle
+* Foundation
+* Langchain with GenAI
+* Customizing LLM and their outputs
+* Building ChatBot with LLM
+* Generative AI in Production
 
-### 02-llm-inference-engineering
-
-* vLLM
-* TensorRT-LLM
-* KV cache
-* Speculative decoding
-* Quantization
-* Throughput optimization
-
-### 03-prompt-engineering
+### 02-prompt-engineering
 
 * Structured prompting
 * XML prompting
@@ -30,13 +20,6 @@ A hands-on repository for learning and building production-grade AI agents. Cove
 * ReAct
 * Self-reflection
 * Constitutional prompting
-
-### 04-model-evaluation
-
-* Benchmarks
-* Hallucination testing
-* Regression testing
-* Safety evaluation
 
 ---
 
