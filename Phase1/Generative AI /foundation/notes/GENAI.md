@@ -1,7 +1,3 @@
-<style>
-
-</style>
-
 ### Definition
 Generative AI (GenAI) is a branch of AI that creates new content—text, code, images, audio, video, or other data—based on patterns learned from existing data.
 
@@ -19,7 +15,7 @@ The intelligence comes from deep neural networks.A neural network learns pattern
 #### Transformers
 The biggest breakthrough in modern GenAI.The Transformer architecture (introduced in 2017) allows models to understand relationships between words regardless of their position in a sentence.
 It replaced older architectures like RNNs and LSTMs for most language tasks.
-### Attention Mechanism
+#### Attention Mechanism
 Transformers use self-attention.Instead of reading text strictly left to right, the model determines which words are most relevant to each other.
 example : John put the book on the table because it was heavy.
 The model learns what "it" refers to using attention.
