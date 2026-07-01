@@ -149,3 +149,152 @@ Since tools are the one that are interacting with our real systems, we need to p
 database connection or other sensitive information to execute and perform, so How do we pass these sensitive information 
 during the tool calls and preventing from the LLM itself.
 
+A **Tool Runtime** is the execution environment in which a tool runs.
+Think of it as the context available while the tool is executing, not while the LLM is thinking.
+The runtime manages things like:
+
+- State
+- Configuration
+- Stores
+- Context
+- Streaming
+- Call metadata
+
+#### 3.3 Access context
+It is a powerful way to thread metadata like user IDs, API keys, or environment settings through your agent system without relying on global variables.
+You define the shape of your context using a dataclass in Python , then pass an instance of that context when calling the agent. Inside your tools, you access these values through the injected ToolRuntime object.
+
+```python
+from dataclasses import dataclass
+from langchain.tools import tool, ToolRuntime
+
+# 1. Define the context schema
+@dataclass
+class UserContext:
+    user_id: str
+
+# 2. Access context inside the tool
+@tool
+def get_account_info(runtime: ToolRuntime[UserContext]) -> str:
+    """Get the current user's account information."""
+    user_id = runtime.context.user_id
+    # Use user_id to fetch user-specific data from your database
+    return f"Fetching info for {user_id}"
+
+# 3. Pass context during invocation
+agent.invoke(
+    {"messages": [...]},
+    context=UserContext(user_id="user123")
+)
+```
+Here you can see we have pass the context in the agent.invoke() method. Now it will be available throughout  
+this conversation is made.
+
+
+#### 3.3 Access State
+We can access state and other config related stuffs in the tool using the ToolRuntime.
+
+```python
+from langchain.tools import tool, ToolRuntime
+from langchain.messages import HumanMessage
+
+@tool
+def get_last_user_message(runtime: ToolRuntime) -> str:
+    """Get the most recent message from the user."""
+    messages = runtime.state["messages"]
+
+    # Find the last human message
+    for message in reversed(messages):
+        if isinstance(message, HumanMessage):
+            return message.content
+
+    return "No user messages found"
+
+# Access custom state fields
+@tool
+def get_user_preference(
+    pref_name: str,
+    runtime: ToolRuntime
+) -> str:
+    """Get a user preference value."""
+    preferences = runtime.state.get("user_preferences", {})
+    return preferences.get(pref_name, "Not set")
+```
+
+#### 3.4 Long-term memory (Store)
+Generally since LLM are stateless therefore we have to manage the memory from our end, this can give use the flexibility 
+to store the message as efficient as possible keeping in mind about the *context window*.
+
+The BaseStore provides persistent storage that survives across conversations. Unlike state (short-term memory), data saved to the store remains available in future sessions.
+Access the store through runtime.store. The store uses a namespace/key pattern to organize data:
+
+```python
+from typing import Any
+from langgraph.store.memory import InMemoryStore
+from langchain.agents import create_agent
+from langchain.tools import tool, ToolRuntime
+from langchain_openai import ChatOpenAI
+
+# Access memory
+@tool
+def get_user_info(user_id: str, runtime: ToolRuntime) -> str:
+    """Look up user info."""
+    store = runtime.store
+    user_info = store.get(("users",), user_id)
+    return str(user_info.value) if user_info else "Unknown user"
+
+# Update memory
+@tool
+def save_user_info(user_id: str, user_info: dict[str, Any], runtime: ToolRuntime) -> str:
+    """Save user info."""
+    store = runtime.store
+    store.put(("users",), user_id, user_info)
+    return "Successfully saved user info."
+
+model = ChatOpenAI(model="gpt-5.5")
+
+store = InMemoryStore()
+agent = create_agent(
+    model,
+    tools=[get_user_info, save_user_info],
+    store=store
+```
+
+#### 3.6 Tool Execution 
+In LangChain, tools are used by agents (for example via create_agent) and tool error handling is configured through middleware.
+**Tool return values**
+You can choose different return values for your tools:
+- Return a string for human-readable results.
+- Return an object for structured results the model should parse.
+- Return a Command with optional message when you need to write to state.
+
+**Return directly from a tool**
+
+Set return direct on a tool to short-circuit the agent loop: the agent returns the tool’s output to the caller immediately, without sending it back through the model for further processing.
+
+```python
+from langchain.agents import create_agent
+from langchain.tools import tool
+from langchain_openai import ChatOpenAI
+
+
+@tool(return_direct=True)
+def fetch_order_status(order_id: str) -> str:
+    """Fetch the current status of a customer order."""
+    # In production, query your order management system here
+    return f"Order {order_id} is shipped and will arrive in 2 days."
+
+
+agent = create_agent(
+    ChatOpenAI(model="google_genai:gemini-3.5-flash"),
+    tools=[fetch_order_status],
+)
+
+result = agent.invoke({
+    "messages": [{"role": "user", "content": "What is the status of order #12345?"}]
+})
+# The agent returns the tool output directly without another LLM call:
+# "Order 12345 is shipped and will arrive in 2 days."
+```
+
+This is it for this part, where we have seen some core of the Langchain and 
