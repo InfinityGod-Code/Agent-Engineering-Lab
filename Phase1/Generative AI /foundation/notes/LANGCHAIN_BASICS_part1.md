@@ -297,4 +297,5 @@ result = agent.invoke({
 # "Order 12345 is shipped and will arrive in 2 days."
 ```
 
-This is it for this part, where we have seen some core of the Langchain and 
+This is it for this part, where we have seen some core of the Langchain like Messages, Tools , little about memory, Runtime, Tool execution
+and principles around it. Its time to build something from this which you can find in the examples.
