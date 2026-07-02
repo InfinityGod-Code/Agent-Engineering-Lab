@@ -297,5 +297,9 @@ result = agent.invoke({
 # "Order 12345 is shipped and will arrive in 2 days."
 ```
 
-This is it for this part, where we have seen some core of the Langchain like Messages, Tools , little about memory, Runtime, Tool execution
-and principles around it. Its time to build something from this which you can find in the examples.
+### 4. Agents
+An agent is a model calling tools in a loop to accomplish a certain task.
+
+**Agent = Model + Harness**
+
+The job of a harness: get the model the right context at the right time for the given task.
