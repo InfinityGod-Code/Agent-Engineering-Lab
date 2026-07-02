@@ -303,3 +303,31 @@ An agent is a model calling tools in a loop to accomplish a certain task.
 **Agent = Model + Harness**
 
 The job of a harness: get the model the right context at the right time for the given task.
+
+
+### 5. LCEL(Langchain Expression Language)
+A Runnable is anything that takes some input and returns some output.A unit of work that can be invoked, batched, streamed, transformed and composed.
+
+
+**Runnable Classes**
+
+| Runnable Class          | Purpose                                   | Real Enterprise Use Case                                                      |
+| ----------------------- | ----------------------------------------- | ----------------------------------------------------------------------------- |
+| `RunnableLambda`        | Wrap any Python function                  | Normalize user queries before retrieval                                       |
+| `RunnablePassthrough`   | Keep original input while adding data     | Preserve user query while adding retrieved documents                          |
+| `RunnableParallel`      | Execute multiple runnables simultaneously | Search Vector DB + SQL + Weather API together                                 |
+| `RunnableSequence`      | Execute runnables one after another       | Prompt → LLM → Parser                                                         |
+| `RunnableBranch`        | Conditional execution                     | Route coding questions to a coding model and legal questions to another model |
+| `RunnableGenerator`     | Generate streamed outputs                 | Real-time translation pipeline                                                |
+| `RunnableWithFallbacks` | Handle failures gracefully                | Switch providers when an API is down                                          |
+
+
+**Output Parsers (also Runnables)**
+
+| Parser                 | Purpose                  | Real Use Case               |
+| ---------------------- | ------------------------ | --------------------------- |
+| `StrOutputParser`      | Return plain text        | Chatbot response            |
+| `JsonOutputParser`     | Return JSON              | API response generation     |
+| `PydanticOutputParser` | Return validated objects | Invoice extraction          |
+| `XMLOutputParser`      | Return XML               | Legacy enterprise systems   |
+| `ListOutputParser`     | Return lists             | Extract skills from resumes |
