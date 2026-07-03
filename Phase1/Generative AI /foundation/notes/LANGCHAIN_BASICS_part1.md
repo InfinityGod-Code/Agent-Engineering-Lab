@@ -331,3 +331,19 @@ A Runnable is anything that takes some input and returns some output.A unit of w
 | `PydanticOutputParser` | Return validated objects | Invoice extraction          |
 | `XMLOutputParser`      | Return XML               | Legacy enterprise systems   |
 | `ListOutputParser`     | Return lists             | Extract skills from resumes |
+
+
+**Pipe Operator**
+
+Pipe operator helps to bind the chains where output from one chain becomes input for the other. This
+provides flexibility to chain different components together from prompts to tools to llm to ouput etc.
+
+example : runnable | prompt | llm | std-parser
+
+<p align="center">
+  <img src="assets/chains.png" alt="AI Engineering from Scratch — reference manual banner" width="100%">
+</p>
+
+Now in order to understand all above concepts please go through the examples section and look for the 
+Youtube-video-summarizer applications where we have utilized message types, chains, pipe operator, Runnables, tool calling 
+and streaming, retrying, fallback on every chains in the process.
