@@ -1,0 +1,13 @@
+[project]
+name = "youtube-video-summarizer"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi[standard]>=0.139.0",
+    "langchain>=1.3.11",
+    "langchain-core>=1.4.8",
+    "langchain-groq>=1.1.3",
+    "youtube-transcript-api>=1.2.4",
+]

@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YouTube Video Summarizer</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
+    background: #0f0f0f; color: #e1e1e1; min-height: 100vh;
+    display: flex; justify-content: center;
+  }
+  .container { max-width: 720px; width: 100%; padding: 48px 24px; }
+  h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; color: #fff; }
+  .subtitle { color: #888; font-size: 14px; margin-bottom: 28px; }
+  .input-group { display: flex; gap: 8px; margin-bottom: 28px; }
+  .input-group input {
+    flex: 1; padding: 12px 16px; border-radius: 8px; border: 1px solid #333;
+    background: #1a1a1a; color: #e1e1e1; font-size: 15px; outline: none;
+    transition: border-color .2s;
+  }
+  .input-group input:focus { border-color: #4a9eff; }
+  .input-group input::placeholder { color: #555; }
+  .input-group button {
+    padding: 12px 24px; border-radius: 8px; border: none;
+    background: #4a9eff; color: #fff; font-size: 15px; font-weight: 600;
+    cursor: pointer; transition: background .2s, opacity .2s;
+    white-space: nowrap;
+  }
+  .input-group button:hover { background: #3a8eef; }
+  .input-group button:disabled { opacity: .5; cursor: not-allowed; }
+
+  #loader { display: none; margin-bottom: 24px; padding: 16px; border-radius: 8px; background: #1a1a1a; }
+  #loader.active { display: block; }
+  .status-line { display: flex; align-items: center; gap: 10px; font-size: 14px; color: #aaa; }
+  .spinner {
+    width: 16px; height: 16px; border: 2px solid #333; border-top-color: #4a9eff;
+    border-radius: 50%; animation: spin .6s linear infinite; flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .pulse-dots::after {
+    content: ''; animation: dots 1.5s steps(4, end) infinite;
+  }
+  @keyframes dots {
+    0% { content: ''; }
+    25% { content: '.'; }
+    50% { content: '..'; }
+    75% { content: '...'; }
+    100% { content: ''; }
+  }
+
+  .tool-calls { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+  .tool-item {
+    display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+    border-radius: 6px; background: #222; font-size: 13px;
+    border-left: 3px solid #4a9eff;
+  }
+  .tool-item.done { border-left-color: #22c55e; }
+  .tool-item.fail { border-left-color: #ef4444; }
+  .tool-name { font-weight: 600; color: #e1e1e1; }
+  .tool-label { color: #888; }
+  .tool-status { margin-left: auto; font-size: 12px; }
+  .tool-status.running { color: #4a9eff; }
+  .tool-status.done { color: #22c55e; }
+
+  #output { display: none; }
+  #output.active { display: block; }
+  #output-inner {
+    padding: 20px; border-radius: 8px; background: #1a1a1a;
+    line-height: 1.7; font-size: 15px; white-space: pre-wrap;
+    border: 1px solid #2a2a2a;
+  }
+  #output-inner a { color: #4a9eff; }
+  #output-inner strong { color: #fff; }
+  .cursor::after {
+    content: '\u258C'; color: #4a9eff; animation: blink .8s step-end infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .error-msg {
+    padding: 12px 16px; border-radius: 8px; background: #2d1515;
+    border: 1px solid #ef4444; color: #fca5a5; font-size: 14px; margin-bottom: 16px;
+    display: none;
+  }
+  .error-msg.active { display: block; }
+
+  .footer { margin-top: 32px; text-align: center; font-size: 12px; color: #555; }
+
+  @media (max-width: 600px) {
+    .container { padding: 24px 16px; }
+    .input-group { flex-direction: column; }
+    .input-group button { width: 100%; }
+    h1 { font-size: 20px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>YouTube Video Summarizer</h1>
+  <p class="subtitle">Paste a YouTube URL and get an AI-powered summary</p>
+
+  <div class="error-msg" id="error"></div>
+
+  <div class="input-group">
+    <input type="url" id="url-input" placeholder="https://www.youtube.com/watch?v=..." autofocus />
+    <button id="summarize-btn" onclick="startSummarize()">Summarize</button>
+  </div>
+
+  <div id="loader">
+    <div class="status-line">
+      <div class="spinner"></div>
+      <span id="status-text">Analyzing video URL<span class="pulse-dots"></span></span>
+    </div>
+    <div class="tool-calls" id="tool-calls"></div>
+  </div>
+
+  <div id="output">
+    <div id="output-inner" class="cursor"></div>
+  </div>
+
+  <p class="footer">Built with LangChain &bull; Groq &bull; FastAPI</p>
+</div>
+
+<script>
+const urlInput = document.getElementById('url-input');
+const summarizeBtn = document.getElementById('summarize-btn');
+const loader = document.getElementById('loader');
+const statusText = document.getElementById('status-text');
+const toolCalls = document.getElementById('tool-calls');
+const output = document.getElementById('output');
+const outputInner = document.getElementById('output-inner');
+const errorEl = document.getElementById('error');
+
+urlInput.addEventListener('keydown', e => { if (e.key === 'Enter') startSummarize(); });
+
+function showError(msg) {
+  errorEl.textContent = msg;
+  errorEl.classList.add('active');
+}
+
+function hideError() {
+  errorEl.classList.remove('active');
+}
+
+function setStatus(msg) {
+  statusText.innerHTML = msg + '<span class="pulse-dots"></span>';
+}
+
+function addToolCall(name, args) {
+  const div = document.createElement('div');
+  div.className = 'tool-item';
+  div.id = 'tool-' + name;
+  div.innerHTML = `
+    <span class="tool-name">${name}</span>
+    <span class="tool-label">${JSON.stringify(args)}</span>
+    <span class="tool-status running">\u25B6 running</span>
+  `;
+  toolCalls.appendChild(div);
+}
+
+function completeToolCall(name, result) {
+  const el = document.getElementById('tool-' + name);
+  if (!el) return;
+  const preview = typeof result === 'string' && result.length > 60 ? result.slice(0, 60) + '...' : result;
+  el.className = 'tool-item done';
+  el.querySelector('.tool-status').className = 'tool-status done';
+  el.querySelector('.tool-status').textContent = '\u2713 done';
+}
+
+function appendToken(text) {
+  output.classList.add('active');
+  outputInner.classList.add('cursor');
+  const isNew = outputInner.textContent === '';
+  outputInner.textContent += text;
+  outputInner.scrollTop = outputInner.scrollHeight;
+}
+
+function finishSummary() {
+  outputInner.classList.remove('cursor');
+  loader.classList.remove('active');
+  summarizeBtn.disabled = false;
+  urlInput.disabled = false;
+}
+
+async function startSummarize() {
+  const url = urlInput.value.trim();
+  if (!url) { showError('Please enter a YouTube URL.'); return; }
+  hideError();
+
+  summarizeBtn.disabled = true;
+  urlInput.disabled = true;
+  output.classList.remove('active');
+  outputInner.textContent = '';
+  toolCalls.innerHTML = '';
+  loader.classList.add('active');
+  setStatus('Analyzing video URL');
+
+  const eventSource = new EventSource('/summarize/stream?url=' + encodeURIComponent(url));
+
+  eventSource.addEventListener('status', e => {
+    const data = JSON.parse(e.data);
+    setStatus(data.message);
+  });
+
+  eventSource.addEventListener('tool_start', e => {
+    const data = JSON.parse(e.data);
+    setStatus('Running tool: ' + data.name);
+    addToolCall(data.name, data.args);
+  });
+
+  eventSource.addEventListener('tool_end', e => {
+    const data = JSON.parse(e.data);
+    completeToolCall(data.name, data.result);
+  });
+
+  eventSource.addEventListener('token', e => {
+    const data = JSON.parse(e.data);
+    appendToken(data);
+  });
+
+  eventSource.addEventListener('done', () => {
+    finishSummary();
+    eventSource.close();
+  });
+
+  eventSource.onerror = () => {
+    showError('Connection lost. Please try again.');
+    finishSummary();
+    eventSource.close();
+  };
+}
+</script>
+</body>
+</html>
