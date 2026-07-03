@@ -113,3 +113,10 @@ data: " weather"
 | "Error: 500"                | Groq API error or tool exception     | Check server logs                     |
 | Agent loops calling a tool  | LLM not respecting stop condition    | The system prompt handles this; if it persists, try a different model via `GroqLLM(model="...")` |
 | Docker build fails          | Python 3.14 image not yet available  | Change `FROM python:3.14-slim` to `FROM python:3.13-slim` in Dockerfile |
+
+
+## Demo Samples 
+
+<p align="center">
+  <img src="assets/change.png" alt="AI Engineering from Scratch — reference manual banner" width="100%">
+</p>
