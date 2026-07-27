@@ -1,0 +1,15 @@
+[project]
+name = "a2a-healthcare"
+version = "1.0.0"
+description = "Healthcare Triage & Coordination System using A2A Protocol"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "a2a-sdk[fastapi]>=1.1.2",
+    "litellm>=1.60.0",
+    "aiosqlite>=0.21.0",
+    "uvicorn[standard]>=0.34.0",
+]
+
+[project.scripts]
+a2a-healthcare = "main:cli_entry"
